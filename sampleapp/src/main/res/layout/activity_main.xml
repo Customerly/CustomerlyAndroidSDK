@@ -14,12 +14,76 @@
         android:layout_height="wrap_content"
         android:text="Open Chat" />
 
-    <View android:layout_height="16dp" android:layout_width="match_parent" />
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
 
     <Button
         android:id="@+id/btnCloseChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Close Chat (simulated)" />
+        android:text="Close Chat" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnLoginUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Login User" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnLogoutUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Logout User" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnSendEvent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Event" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnSetAttribute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Set Attribute" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnShowNewMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show New Message" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnSendNewMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send New Message" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnShowArticle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show Article" />
+
+    <View android:layout_height="8dp" android:layout_width="match_parent" />
+
+    <Button
+        android:id="@+id/btnRegisterLead"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Register Lead" />
 
 </LinearLayout>

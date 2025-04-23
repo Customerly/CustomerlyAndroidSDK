@@ -9,24 +9,48 @@ import org.json.JSONObject
 
 @SuppressLint("StaticFieldLeak")
 object Customerly {
-
     private var appId: String? = null
     private var initializedWebView: WebView? = null
     private var jsBridge: JSBridge? = null
+    private var context: Context? = null
+    private var notificationsHelper: NotificationsHelper? = null
 
-    fun init(context: Context, appId: String) {
+    fun load(context: Context, appId: String) {
         this.appId = appId
-        preloadWebView(context.applicationContext)
+        this.context = context
+        this.notificationsHelper = NotificationsHelper(context)
+        preloadWebView()
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun preloadWebView(context: Context) {
-        if (initializedWebView != null) {
+    fun setContext(context: Context) {
+        this.initializedWebView?.destroy()
+
+        this.context = context
+        this.notificationsHelper = NotificationsHelper(context)
+        preloadWebView()
+    }
+
+    fun requestNotificationPermissionIfNeeded() {
+        if (context == null) {
+            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
             return
         }
 
-        val webView = WebView(context)
-        jsBridge = JSBridge(context)
+        this.notificationsHelper?.requestNotificationPermissionIfNeeded(context!!)
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun preloadWebView() {
+        if (initializedWebView != null || context == null) {
+            return
+        }
+
+        val webView = WebView(context!!)
+        jsBridge = JSBridge { message, notificationId, conversationId ->
+            this.notificationsHelper?.showNotification(
+                context!!, message, notificationId, conversationId
+            )
+        }
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -51,6 +75,8 @@ object Customerly {
 
         webView.addJavascriptInterface(jsBridge!!, "CustomerlyNative")
 
+        // TODO: Find a way to disable realtime calls
+        // TODO: Find a way to present surveys
         val html = """
             <!DOCTYPE html>
             <html>
@@ -60,7 +86,8 @@ object Customerly {
                   !function(){var e=window,i=document,t="customerly",n="queue",o="load",r="settings",u=e[t]=e[t]||[];if(u.t){return void u.i("[customerly] SDK already initialized. Snippet included twice.")}u.t=!0;u.loaded=!1;u.o=["event","attribute","update","show","hide","open","close"];u[n]=[];u.i=function(t){e.console&&!u.debug&&console.error&&console.error(t)};u.u=function(e){return function(){var t=Array.prototype.slice.call(arguments);return t.unshift(e),u[n].push(t),u}};u[o]=function(t){u[r]=t||{};if(u.loaded){return void u.i("[customerly] SDK already loaded. Use `customerly.update` to change settings.")}u.loaded=!0;var e=i.createElement("script");e.type="text/javascript",e.async=!0,e.src="https://messenger.customerly.io/launcher.js";var n=i.getElementsByTagName("script")[0];n.parentNode.insertBefore(e,n)};u.o.forEach(function(t){u[t]=u.u(t)})}();
       
                   customerly.load({
-                    "app_id": "$appId"
+                    "app_id": "$appId",
+                    "sdkMode": true
                   });
                   
                   // Register callbacks
@@ -70,20 +97,6 @@ object Customerly {
                   
                   customerly.onChatOpened = function() {
                     CustomerlyNative.postMessage(JSON.stringify({type: "onChatOpened"}));
-                  };
-                  
-                  customerly.onChatflowNotificationViewed = function(notificationId, email) {
-                    CustomerlyNative.postMessage(JSON.stringify({
-                      type: "onChatflowNotificationViewed",
-                      data: {notificationId: notificationId, email: email}
-                    }));
-                  };
-                  
-                  customerly.onChatflowNotificationClicked = function(notificationId, item, email) {
-                    CustomerlyNative.postMessage(JSON.stringify({
-                      type: "onChatflowNotificationClicked",
-                      data: {notificationId: notificationId, item: item, email: email}
-                    }));
                   };
                   
                   customerly.onHelpCenterArticleOpened = function(article) {
@@ -134,21 +147,6 @@ object Customerly {
                       data: {attribute: attribute}
                     }));
                   };
-                  
-                  customerly.onRealtimeVideoAnswered = function() {
-                    CustomerlyNative.postMessage(JSON.stringify({type: "onRealtimeVideoAnswered"}));
-                  };
-                  
-                  customerly.onRealtimeVideoRejected = function() {
-                    CustomerlyNative.postMessage(JSON.stringify({type: "onRealtimeVideoRejected"}));
-                  };
-                  
-                  customerly.onTriggerFired = function(triggerId) {
-                    CustomerlyNative.postMessage(JSON.stringify({
-                      type: "onTriggerFired",
-                      data: {triggerId: triggerId}
-                    }));
-                  };
                 </script>
               </body>
             </html>
@@ -161,9 +159,11 @@ object Customerly {
         initializedWebView = webView
     }
 
+    fun getWebView(): WebView? = initializedWebView
+
     private fun evaluateJavascript(script: String) {
         if (initializedWebView == null) {
-            Log.e("CustomerlySDK", "WebView is not initialized. Call init() first.")
+            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
             return
         }
 
@@ -172,22 +172,23 @@ object Customerly {
         }
     }
 
-    fun show(context: Context) {
-        if (initializedWebView == null) {
-            Log.e("CustomerlySDK", "WebView is not initialized. Call init() first.")
+    fun show() {
+        if (initializedWebView == null || context == null) {
+            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
             return
         }
 
         evaluateJavascript("customerly.open()")
+        evaluateJavascript("_customerly_sdk.navigate('/', true)")
 
         val intent = Intent(context, WidgetActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        context.startActivity(intent)
+        context!!.startActivity(intent)
     }
 
     fun hide() {
         if (initializedWebView == null) {
-            Log.e("CustomerlySDK", "WebView is not initialized. Call init() first.")
+            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
             return
         }
 
@@ -195,7 +196,7 @@ object Customerly {
         if (context != null) {
             val intent = Intent(context, WidgetActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            intent.putExtra("action", "hide")
+            intent.putExtra(WidgetActivity.ExtraKey.ACTION.name, WidgetActivity.Action.HIDE.name)
             context.startActivity(intent)
         }
     }
@@ -224,14 +225,17 @@ object Customerly {
     }
 
     fun showNewMessage(message: String) {
+        show()
         evaluateJavascript("customerly.showNewMessage('$message')")
     }
 
     fun sendNewMessage(message: String) {
+        show()
         evaluateJavascript("customerly.sendNewMessage('$message')")
     }
 
     fun showArticle(collectionSlug: String, articleSlug: String) {
+        show()
         evaluateJavascript("customerly.showArticle('$collectionSlug', '$articleSlug')")
     }
 
@@ -240,12 +244,18 @@ object Customerly {
         evaluateJavascript("customerly.registerLead('$email', $attributesJson)")
     }
 
-    fun getWebView(): WebView? = initializedWebView
+    fun back() {
+        evaluateJavascript("_customerly_sdk.back()")
+    }
+
+    fun navigateToConversation(conversationId: Int) {
+        evaluateJavascript("_customerly_sdk.navigateToConversation($conversationId)")
+    }
 
     // Callback registration methods
     private fun registerCallback(type: String, callback: CustomerlyCallback) {
         if (jsBridge == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call init() first.")
+            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
             return
         }
 
@@ -264,21 +274,6 @@ object Customerly {
     fun setOnChatOpened(callback: () -> Unit) {
         registerCallback("onChatOpened", object : CustomerlyCallback {
             override fun onChatOpened() = callback()
-        })
-    }
-
-    fun setOnChatflowNotificationViewed(callback: (Int, String?) -> Unit) {
-        registerCallback("onChatflowNotificationViewed", object : CustomerlyCallback {
-            override fun onChatflowNotificationViewed(notificationId: Int, email: String?) =
-                callback(notificationId, email)
-        })
-    }
-
-    fun setOnChatflowNotificationClicked(callback: (Int, JSONObject?, String?) -> Unit) {
-        registerCallback("onChatflowNotificationClicked", object : CustomerlyCallback {
-            override fun onChatflowNotificationClicked(
-                notificationId: Int, item: JSONObject?, email: String?
-            ) = callback(notificationId, item, email)
         })
     }
 
@@ -325,24 +320,6 @@ object Customerly {
     fun setOnProfilingQuestionAsked(callback: (String) -> Unit) {
         registerCallback("onProfilingQuestionAsked", object : CustomerlyCallback {
             override fun onProfilingQuestionAsked(attribute: String) = callback(attribute)
-        })
-    }
-
-    fun setOnRealtimeVideoAnswered(callback: () -> Unit) {
-        registerCallback("onRealtimeVideoAnswered", object : CustomerlyCallback {
-            override fun onRealtimeVideoAnswered() = callback()
-        })
-    }
-
-    fun setOnRealtimeVideoRejected(callback: () -> Unit) {
-        registerCallback("onRealtimeVideoRejected", object : CustomerlyCallback {
-            override fun onRealtimeVideoRejected() = callback()
-        })
-    }
-
-    fun setOnTriggerFired(callback: (Int) -> Unit) {
-        registerCallback("onTriggerFired", object : CustomerlyCallback {
-            override fun onTriggerFired(triggerId: Int) = callback(triggerId)
         })
     }
 }

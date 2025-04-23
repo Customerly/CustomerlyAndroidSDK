@@ -7,12 +7,26 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.FrameLayout
 
 class WidgetActivity : AppCompatActivity() {
+    enum class ExtraKey {
+        CONVERSATION_ID, ACTION
+    }
+
+    enum class Action {
+        HIDE
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (intent.getStringExtra("action") == "hide") {
+        if (intent.getStringExtra(ExtraKey.ACTION.name) == Action.HIDE.name) {
             finish()
             return
+        }
+
+        // Check if we have a message from the notification
+        val conversationId = intent.getIntExtra(ExtraKey.CONVERSATION_ID.name, -1)
+        if (conversationId != -1) {
+            Customerly.navigateToConversation(conversationId)
         }
 
         val rootLayout = FrameLayout(this).apply {
@@ -40,5 +54,9 @@ class WidgetActivity : AppCompatActivity() {
         }
 
         setContentView(rootLayout)
+    }
+
+    override fun onBackPressed() {
+        Customerly.back()
     }
 }
