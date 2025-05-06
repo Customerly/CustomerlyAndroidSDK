@@ -2,14 +2,16 @@ package io.customerly.androidsdk
 
 import android.util.Log
 import android.webkit.JavascriptInterface
+import io.customerly.androidsdk.models.*
+import org.json.JSONArray
 import org.json.JSONObject
 
 interface CustomerlyCallback {
     fun onChatClosed() {}
     fun onChatOpened() {}
-    fun onHelpCenterArticleOpened(article: JSONObject) {}
+    fun onHelpCenterArticleOpened(article: HelpCenterArticle) {}
     fun onLeadGenerated(email: String?) {}
-    fun onNewConversation(message: String, attachments: List<JSONObject>) {}
+    fun onNewConversation(message: String, attachments: List<AttachmentPayload>) {}
     fun onNewMessageReceived(
         accountId: Int, message: String, timestamp: Long, userId: Int, conversationId: Int
     ) {
@@ -18,6 +20,13 @@ interface CustomerlyCallback {
     fun onNewConversationReceived(conversationId: Int) {}
     fun onProfilingQuestionAnswered(attribute: String, value: String) {}
     fun onProfilingQuestionAsked(attribute: String) {}
+    fun onRealtimeVideoAnswered(call: RealtimeCall) {}
+    fun onRealtimeVideoCanceled() {}
+    fun onRealtimeVideoReceived(call: RealtimeCall) {}
+    fun onRealtimeVideoRejected() {}
+    fun onSurveyAnswered() {}
+    fun onSurveyPresented(survey: Survey) {}
+    fun onSurveyRejected() {}
 }
 
 class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
@@ -42,7 +51,7 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                 }
                 "onChatOpened" -> callbacks["onChatOpened"]?.onChatOpened()
                 "onHelpCenterArticleOpened" -> {
-                    val article = data ?: JSONObject()
+                    val article = data?.toHelpCenterArticle() ?: return
                     callbacks["onHelpCenterArticleOpened"]?.onHelpCenterArticleOpened(article)
                 }
                 "onLeadGenerated" -> {
@@ -50,9 +59,10 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                     callbacks["onLeadGenerated"]?.onLeadGenerated(email)
                 }
                 "onNewConversation" -> {
+                    // We don't need to show a notification because this callback is triggered when the user creates a new conversation
                     val message = data?.getString("message") ?: ""
                     val attachments = data?.optJSONArray("attachments")?.let { array ->
-                        List(array.length()) { array.getJSONObject(it) }
+                        List(array.length()) { array.getJSONObject(it).toAttachmentPayload() }
                     } ?: emptyList()
                     callbacks["onNewConversation"]?.onNewConversation(message, attachments)
                 }
@@ -72,6 +82,7 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                     )
                 }
                 "onNewConversationReceived" -> {
+                    // We don't need to show a notification because when this callback is triggered, should also be triggered the onNewMessageReceived callback
                     val conversationId = data?.getInt("conversationId") ?: 0
                     callbacks["onNewConversationReceived"]?.onNewConversationReceived(conversationId)
                 }
@@ -86,9 +97,127 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                     val attribute = data?.getString("attribute") ?: ""
                     callbacks["onProfilingQuestionAsked"]?.onProfilingQuestionAsked(attribute)
                 }
+                "onRealtimeVideoAnswered" -> {
+                    val call = data?.toRealtimeCall() ?: return
+                    callbacks["onRealtimeVideoAnswered"]?.onRealtimeVideoAnswered(call)
+                }
+                "onRealtimeVideoCanceled" -> callbacks["onRealtimeVideoCanceled"]?.onRealtimeVideoCanceled()
+                "onRealtimeVideoReceived" -> {
+                    Customerly.show()
+
+                    val call = data?.toRealtimeCall() ?: return
+                    callbacks["onRealtimeVideoReceived"]?.onRealtimeVideoReceived(call)
+                }
+                "onRealtimeVideoRejected" -> callbacks["onRealtimeVideoRejected"]?.onRealtimeVideoRejected()
+                "onSurveyAnswered" -> callbacks["onSurveyAnswered"]?.onSurveyAnswered()
+                "onSurveyPresented" -> {
+                    Customerly.show()
+
+                    val survey = data?.toSurvey() ?: return
+                    callbacks["onSurveyPresented"]?.onSurveyPresented(survey)
+                }
+                "onSurveyRejected" -> {
+                    Customerly.hide()
+                    callbacks["onSurveyRejected"]?.onSurveyRejected()
+                }
             }
         } catch (e: Exception) {
             Log.e("CustomerlySDK", "Error processing message: $message", e)
         }
+    }
+
+    private fun JSONObject.toHelpCenterArticle(): HelpCenterArticle {
+        return HelpCenterArticle(
+            knowledge_base_article_id = getLong("knowledge_base_article_id"),
+            knowledge_base_collection_id = getLong("knowledge_base_collection_id"),
+            app_id = getString("app_id"),
+            slug = getString("slug"),
+            title = getString("title"),
+            description = getString("description"),
+            body = getString("body"),
+            sort = getInt("sort"),
+            written_by = getJSONObject("written_by").toWrittenBy(),
+            updated_at = getLong("updated_at")
+        )
+    }
+
+    private fun JSONObject.toWrittenBy(): WrittenBy {
+        return WrittenBy(
+            account_id = getLong("account_id"), email = optString("email"), name = getString("name")
+        )
+    }
+
+    private fun JSONObject.toAttachmentPayload(): AttachmentPayload {
+        return AttachmentPayload(
+            name = getString("name"), size = getLong("size"), base64 = getString("base64")
+        )
+    }
+
+    private fun JSONObject.toSurvey(): Survey {
+        return Survey(
+            survey_id = getLong("survey_id"),
+            creator = getJSONObject("creator").toAccount(),
+            thank_you_text = optString("thank_you_text"),
+            seen_at = optLong("seen_at"),
+            question = optJSONObject("question")?.toSurveyQuestion()
+        )
+    }
+
+    private fun JSONObject.toAccount(): Account {
+        return Account(
+            account_id = getLong("account_id"),
+            name = optString("name"),
+            is_ai = getBoolean("is_ai")
+        )
+    }
+
+    private fun JSONObject.toSurveyQuestion(): SurveyQuestion {
+        return SurveyQuestion(
+            survey_id = getLong("survey_id"),
+            survey_question_id = getLong("survey_question_id"),
+            step = getInt("step"),
+            title = optString("title"),
+            subtitle = optString("subtitle"),
+            type = SurveyQuestionType.valueOf(getString("type")),
+            limits = optJSONObject("limits")?.toSurveyQuestionLimits(),
+            choices = getJSONArray("choices").toSurveyQuestionChoices()
+        )
+    }
+
+    private fun JSONObject.toSurveyQuestionLimits(): SurveyQuestionLimits {
+        return SurveyQuestionLimits(
+            from = getInt("from"), to = getInt("to")
+        )
+    }
+
+    private fun JSONArray.toSurveyQuestionChoices(): List<SurveyQuestionChoice> {
+        return List(length()) { i ->
+            getJSONObject(i).toSurveyQuestionChoice()
+        }
+    }
+
+    private fun JSONObject.toSurveyQuestionChoice(): SurveyQuestionChoice {
+        return SurveyQuestionChoice(
+            survey_id = getLong("survey_id"),
+            survey_question_id = getLong("survey_question_id"),
+            survey_choice_id = getLong("survey_choice_id"),
+            step = getInt("step"),
+            value = optString("value")
+        )
+    }
+
+    private fun JSONObject.toRealtimeCall(): RealtimeCall {
+        return RealtimeCall(
+            account = getJSONObject("account").toAccount(),
+            url = getString("url"),
+            conversation_id = getLong("conversation_id"),
+            user = getJSONObject("user").toRealtimeCallUser()
+        )
+    }
+
+    private fun JSONObject.toRealtimeCallUser(): RealtimeCallUser {
+        return RealtimeCallUser(
+            user_id = getLong("user_id")
+        )
     }
 }

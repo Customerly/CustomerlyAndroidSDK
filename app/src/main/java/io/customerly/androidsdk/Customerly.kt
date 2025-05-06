@@ -5,6 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.webkit.*
+import io.customerly.androidsdk.models.AttachmentPayload
+import io.customerly.androidsdk.models.HelpCenterArticle
+import io.customerly.androidsdk.models.RealtimeCall
+import io.customerly.androidsdk.models.Survey
 import org.json.JSONObject
 
 @SuppressLint("StaticFieldLeak")
@@ -75,8 +79,6 @@ object Customerly {
 
         webView.addJavascriptInterface(jsBridge!!, "CustomerlyNative")
 
-        // TODO: Find a way to disable realtime calls
-        // TODO: Find a way to present surveys
         val html = """
             <!DOCTYPE html>
             <html>
@@ -277,9 +279,9 @@ object Customerly {
         })
     }
 
-    fun setOnHelpCenterArticleOpened(callback: (JSONObject) -> Unit) {
+    fun setOnHelpCenterArticleOpened(callback: (HelpCenterArticle) -> Unit) {
         registerCallback("onHelpCenterArticleOpened", object : CustomerlyCallback {
-            override fun onHelpCenterArticleOpened(article: JSONObject) = callback(article)
+            override fun onHelpCenterArticleOpened(article: HelpCenterArticle) = callback(article)
         })
     }
 
@@ -289,9 +291,9 @@ object Customerly {
         })
     }
 
-    fun setOnNewConversation(callback: (String, List<JSONObject>) -> Unit) {
+    fun setOnNewConversation(callback: (String, List<AttachmentPayload>) -> Unit) {
         registerCallback("onNewConversation", object : CustomerlyCallback {
-            override fun onNewConversation(message: String, attachments: List<JSONObject>) =
+            override fun onNewConversation(message: String, attachments: List<AttachmentPayload>) =
                 callback(message, attachments)
         })
     }
@@ -320,6 +322,48 @@ object Customerly {
     fun setOnProfilingQuestionAsked(callback: (String) -> Unit) {
         registerCallback("onProfilingQuestionAsked", object : CustomerlyCallback {
             override fun onProfilingQuestionAsked(attribute: String) = callback(attribute)
+        })
+    }
+
+    fun setOnRealtimeVideoAnswered(callback: (RealtimeCall) -> Unit) {
+        registerCallback("onRealtimeVideoAnswered", object : CustomerlyCallback {
+            override fun onRealtimeVideoAnswered(call: RealtimeCall) = callback(call)
+        })
+    }
+
+    fun setOnRealtimeVideoCanceled(callback: () -> Unit) {
+        registerCallback("onRealtimeVideoCanceled", object : CustomerlyCallback {
+            override fun onRealtimeVideoCanceled() = callback()
+        })
+    }
+
+    fun setOnRealtimeVideoReceived(callback: (RealtimeCall) -> Unit) {
+        registerCallback("onRealtimeVideoReceived", object : CustomerlyCallback {
+            override fun onRealtimeVideoReceived(call: RealtimeCall) = callback(call)
+        })
+    }
+
+    fun setOnRealtimeVideoRejected(callback: () -> Unit) {
+        registerCallback("onRealtimeVideoRejected", object : CustomerlyCallback {
+            override fun onRealtimeVideoRejected() = callback()
+        })
+    }
+
+    fun setOnSurveyAnswered(callback: () -> Unit) {
+        registerCallback("onSurveyAnswered", object : CustomerlyCallback {
+            override fun onSurveyAnswered() = callback()
+        })
+    }
+
+    fun setOnSurveyPresented(callback: (Survey) -> Unit) {
+        registerCallback("onSurveyPresented", object : CustomerlyCallback {
+            override fun onSurveyPresented(survey: Survey) = callback(survey)
+        })
+    }
+
+    fun setOnSurveyRejected(callback: () -> Unit) {
+        registerCallback("onSurveyRejected", object : CustomerlyCallback {
+            override fun onSurveyRejected() = callback()
         })
     }
 }
