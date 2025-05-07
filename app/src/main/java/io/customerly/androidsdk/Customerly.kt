@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.webkit.*
@@ -14,6 +15,7 @@ import io.customerly.androidsdk.models.HelpCenterArticle
 import io.customerly.androidsdk.models.RealtimeCall
 import io.customerly.androidsdk.models.Survey
 import org.json.JSONObject
+import androidx.core.net.toUri
 
 @SuppressLint("StaticFieldLeak")
 object Customerly {
@@ -22,6 +24,9 @@ object Customerly {
     private var jsBridge: JSBridge? = null
     private var context: Context? = null
     private var notificationsHelper: NotificationsHelper? = null
+
+    private const val FILE_CHOOSER_RESULT_CODE = 10001
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     fun load(context: Context, settings: CustomerlySettings) {
         this.settings = settings
@@ -116,13 +121,45 @@ object Customerly {
             )
         }
 
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            mediaPlaybackRequiresUserGesture = false
+            allowFileAccess = true
+            allowContentAccess = true
+        }
 
         WebView.setWebContentsDebuggingEnabled(true)
 
-        webView.webChromeClient = WebChromeClient()
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathPickerCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                if (context == null) {
+                    return false
+                }
+
+                val intent = fileChooserParams?.createIntent()
+                try {
+                    val widgetActivity = WidgetActivity.getCurrentInstance()
+                    if (widgetActivity != null) {
+                        widgetActivity.startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE)
+                        filePathPickerCallback?.let { callback ->
+                            filePathCallback = callback
+                        }
+                        return true
+                    } else {
+                        Log.e("CustomerlySDK", "WidgetActivity not available")
+                    }
+                } catch (e: Exception) {
+                    Log.e("CustomerlySDK", "Error launching file chooser", e)
+                }
+                return false
+            }
+        }
+
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
@@ -531,5 +568,31 @@ object Customerly {
         }
 
         jsBridge?.removeAllCallbacks()
+    }
+
+    fun handleActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+            if (filePathCallback == null) {
+                return
+            }
+
+            var results: Array<Uri>? = null
+            if (resultCode == Activity.RESULT_OK) {
+                if (data != null) {
+                    val dataString = data.dataString
+                    if (dataString != null) {
+                        results = arrayOf(dataString.toUri())
+                    } else {
+                        val clipData = data.clipData
+                        if (clipData != null) {
+                            results = Array(clipData.itemCount) { i -> clipData.getItemAt(i).uri }
+                        }
+                    }
+                }
+            }
+
+            filePathCallback!!.onReceiveValue(results)
+            filePathCallback = null
+        }
     }
 }

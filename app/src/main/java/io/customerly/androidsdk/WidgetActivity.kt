@@ -1,5 +1,6 @@
 package io.customerly.androidsdk
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
@@ -17,13 +18,16 @@ class WidgetActivity : AppCompatActivity() {
 
     companion object {
         private var isRunning = false
+        private var currentInstance: WidgetActivity? = null
 
         fun isActivityRunning(): Boolean = isRunning
+        fun getCurrentInstance(): WidgetActivity? = currentInstance
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isRunning = true
+        currentInstance = this
 
         if (intent.getStringExtra(ExtraKey.ACTION.name) == Action.HIDE.name) {
             finish()
@@ -70,5 +74,11 @@ class WidgetActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
+        currentInstance = null
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Customerly.handleActivityResult(requestCode, resultCode, data)
     }
 }
