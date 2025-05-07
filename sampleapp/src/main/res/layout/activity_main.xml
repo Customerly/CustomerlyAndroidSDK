@@ -86,4 +86,16 @@
         android:layout_height="wrap_content"
         android:text="Register Lead" />
 
+    <Button
+        android:id="@+id/btnShowNewMessagesCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 new messages" />
+
+    <Button
+        android:id="@+id/btnShowNewConversationsCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 new conversations" />
+
 </LinearLayout>

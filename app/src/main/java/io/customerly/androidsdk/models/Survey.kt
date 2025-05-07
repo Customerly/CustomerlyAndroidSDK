@@ -1,7 +1,23 @@
 package io.customerly.androidsdk.models
 
 enum class SurveyQuestionType {
-    Button, RadioButton, Select, Scale, Star, Integer, Textbox, Textarea
+    Button, RadioButton, Select, Scale, Star, Integer, Textbox, Textarea;
+
+    companion object {
+        fun fromInt(value: Int): SurveyQuestionType {
+            return when (value) {
+                0 -> Button
+                1 -> RadioButton
+                2 -> Select
+                3 -> Scale
+                4 -> Star
+                5 -> Integer
+                6 -> Textbox
+                7 -> Textarea
+                else -> throw IllegalArgumentException("Invalid survey question type: $value")
+            }
+        }
+    }
 }
 
 data class Survey(

@@ -1,17 +1,34 @@
 package io.customerly.sampleapp
 
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import io.customerly.androidsdk.Customerly
+import io.customerly.androidsdk.models.CustomerlySettings
 
 class MainActivity : AppCompatActivity() {
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Customerly.load(this, "936fd1dc")
+        Customerly.load(this, CustomerlySettings(app_id = "936fd1dc"))
+
+        Customerly.setOnMessengerInitialized {
+            runOnUiThread {
+                Customerly.getUnreadMessagesCount { count ->
+                    findViewById<Button>(R.id.btnShowNewMessagesCount).text =
+                        "${count} new message/s"
+                }
+                Customerly.getUnreadConversationsCount { count ->
+                    findViewById<Button>(R.id.btnShowNewConversationsCount).text =
+                        "${count} new conversation/s"
+                }
+            }
+        }
 
         Customerly.requestNotificationPermissionIfNeeded()
 
@@ -25,10 +42,11 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnLoginUser).setOnClickListener {
             Customerly.update(
-                mapOf(
-                    "user_id" to "123",
-                    "email" to "gb@customerly.io",
-                    "name" to "Giorgio",
+                CustomerlySettings(
+                    app_id = "936fd1dc",
+                    user_id = "123",
+                    email = "gb@customerly.io",
+                    name = "Giorgio",
                 )
             )
         }
@@ -64,6 +82,19 @@ class MainActivity : AppCompatActivity() {
                 "lead@example.com",
                 mapOf("source" to "android_app", "interest" to "premium_features")
             )
+        }
+
+        findViewById<Button>(R.id.btnShowNewMessagesCount).setOnClickListener {
+            Customerly.getUnreadMessagesCount { count ->
+                findViewById<Button>(R.id.btnShowNewMessagesCount).text = "${count} new message/s"
+            }
+        }
+
+        findViewById<Button>(R.id.btnShowNewConversationsCount).setOnClickListener {
+            Customerly.getUnreadConversationsCount { count ->
+                findViewById<Button>(R.id.btnShowNewConversationsCount).text =
+                    "${count} new conversation/s"
+            }
         }
     }
 }

@@ -11,12 +11,12 @@ interface CustomerlyCallback {
     fun onChatOpened() {}
     fun onHelpCenterArticleOpened(article: HelpCenterArticle) {}
     fun onLeadGenerated(email: String?) {}
+    fun onMessengerInitialized() {}
     fun onNewConversation(message: String, attachments: List<AttachmentPayload>) {}
     fun onNewMessageReceived(
         accountId: Int, message: String, timestamp: Long, userId: Int, conversationId: Int
     ) {
     }
-
     fun onNewConversationReceived(conversationId: Int) {}
     fun onProfilingQuestionAnswered(attribute: String, value: String) {}
     fun onProfilingQuestionAsked(attribute: String) {}
@@ -36,6 +36,14 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
         callbacks[type] = callback
     }
 
+    fun removeCallback(type: String) {
+        callbacks.remove(type)
+    }
+
+    fun removeAllCallbacks() {
+        callbacks.clear()
+    }
+
     @Suppress("NAME_SHADOWING")
     @JavascriptInterface
     fun postMessage(message: String) {
@@ -49,15 +57,21 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                     Customerly.hide()
                     callbacks["onChatClosed"]?.onChatClosed()
                 }
+
                 "onChatOpened" -> callbacks["onChatOpened"]?.onChatOpened()
+
                 "onHelpCenterArticleOpened" -> {
                     val article = data?.toHelpCenterArticle() ?: return
                     callbacks["onHelpCenterArticleOpened"]?.onHelpCenterArticleOpened(article)
                 }
+
                 "onLeadGenerated" -> {
                     val email = data?.optString("email")
                     callbacks["onLeadGenerated"]?.onLeadGenerated(email)
                 }
+
+                "onMessengerInitialized" -> callbacks["onMessengerInitialized"]?.onMessengerInitialized()
+
                 "onNewConversation" -> {
                     // We don't need to show a notification because this callback is triggered when the user creates a new conversation
                     val message = data?.getString("message") ?: ""
@@ -66,7 +80,9 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                     } ?: emptyList()
                     callbacks["onNewConversation"]?.onNewConversation(message, attachments)
                 }
+
                 "onNewMessageReceived" -> {
+                    Log.d("CustomerlySDK", "onNewMessageReceived")
                     val accountId = data?.getInt("accountId") ?: 0
                     val message = data?.getString("message") ?: ""
                     val timestamp = data?.getLong("timestamp") ?: 0L
@@ -81,11 +97,13 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                         accountId, message, timestamp, userId, conversationId
                     )
                 }
+
                 "onNewConversationReceived" -> {
                     // We don't need to show a notification because when this callback is triggered, should also be triggered the onNewMessageReceived callback
                     val conversationId = data?.getInt("conversationId") ?: 0
                     callbacks["onNewConversationReceived"]?.onNewConversationReceived(conversationId)
                 }
+
                 "onProfilingQuestionAnswered" -> {
                     val attribute = data?.getString("attribute") ?: ""
                     val value = data?.getString("value") ?: ""
@@ -93,31 +111,35 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                         attribute, value
                     )
                 }
+
                 "onProfilingQuestionAsked" -> {
                     val attribute = data?.getString("attribute") ?: ""
                     callbacks["onProfilingQuestionAsked"]?.onProfilingQuestionAsked(attribute)
                 }
+
                 "onRealtimeVideoAnswered" -> {
                     val call = data?.toRealtimeCall() ?: return
                     callbacks["onRealtimeVideoAnswered"]?.onRealtimeVideoAnswered(call)
                 }
+
                 "onRealtimeVideoCanceled" -> callbacks["onRealtimeVideoCanceled"]?.onRealtimeVideoCanceled()
                 "onRealtimeVideoReceived" -> {
-                    Customerly.show()
+                    Customerly.show(safe = true)
 
                     val call = data?.toRealtimeCall() ?: return
                     callbacks["onRealtimeVideoReceived"]?.onRealtimeVideoReceived(call)
                 }
+
                 "onRealtimeVideoRejected" -> callbacks["onRealtimeVideoRejected"]?.onRealtimeVideoRejected()
                 "onSurveyAnswered" -> callbacks["onSurveyAnswered"]?.onSurveyAnswered()
                 "onSurveyPresented" -> {
-                    Customerly.show()
+                    Customerly.show(withoutNavigation = true, safe = true)
 
                     val survey = data?.toSurvey() ?: return
                     callbacks["onSurveyPresented"]?.onSurveyPresented(survey)
                 }
+
                 "onSurveyRejected" -> {
-                    Customerly.hide()
                     callbacks["onSurveyRejected"]?.onSurveyRejected()
                 }
             }
@@ -178,7 +200,15 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
             step = getInt("step"),
             title = optString("title"),
             subtitle = optString("subtitle"),
-            type = SurveyQuestionType.valueOf(getString("type")),
+            type = if (has("type")) {
+                when (val typeValue = get("type")) {
+                    is String -> SurveyQuestionType.valueOf(typeValue)
+                    is Number -> SurveyQuestionType.fromInt(typeValue.toInt())
+                    else -> throw IllegalArgumentException("Invalid type value: $typeValue")
+                }
+            } else {
+                throw IllegalArgumentException("Missing type field")
+            },
             limits = optJSONObject("limits")?.toSurveyQuestionLimits(),
             choices = getJSONArray("choices").toSurveyQuestionChoices()
         )

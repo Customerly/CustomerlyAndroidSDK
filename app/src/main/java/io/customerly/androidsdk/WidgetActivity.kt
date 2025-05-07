@@ -15,8 +15,15 @@ class WidgetActivity : AppCompatActivity() {
         HIDE
     }
 
+    companion object {
+        private var isRunning = false
+
+        fun isActivityRunning(): Boolean = isRunning
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isRunning = true
 
         if (intent.getStringExtra(ExtraKey.ACTION.name) == Action.HIDE.name) {
             finish()
@@ -58,5 +65,10 @@ class WidgetActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         Customerly.back()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isRunning = false
     }
 }
