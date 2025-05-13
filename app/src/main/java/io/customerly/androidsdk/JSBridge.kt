@@ -82,7 +82,6 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                 }
 
                 "onNewMessageReceived" -> {
-                    Log.d("CustomerlySDK", "onNewMessageReceived")
                     val accountId = data?.getInt("accountId") ?: 0
                     val message = data?.getString("message") ?: ""
                     val timestamp = data?.getLong("timestamp") ?: 0L

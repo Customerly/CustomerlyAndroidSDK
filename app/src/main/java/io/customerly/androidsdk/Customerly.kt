@@ -163,7 +163,6 @@ object Customerly {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                Log.d("CustomerlySDK", "WebView finished loading")
             }
 
             override fun onReceivedError(
