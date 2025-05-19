@@ -143,15 +143,15 @@ object Customerly {
 
                 val intent = fileChooserParams?.createIntent()
                 try {
-                    val widgetActivity = WidgetActivity.getCurrentInstance()
-                    if (widgetActivity != null) {
-                        widgetActivity.startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE)
+                    val messengerActivity = MessengerActivity.getCurrentInstance()
+                    if (messengerActivity != null) {
+                        messengerActivity.startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE)
                         filePathPickerCallback?.let { callback ->
                             filePathCallback = callback
                         }
                         return true
                     } else {
-                        Log.e("CustomerlySDK", "WidgetActivity not available")
+                        Log.e("CustomerlySDK", "MessengerActivity not available")
                     }
                 } catch (e: Exception) {
                     Log.e("CustomerlySDK", "Error launching file chooser", e)
@@ -332,8 +332,8 @@ object Customerly {
             evaluateJavascript("_customerly_sdk.navigate('/', true)", safe)
         }
 
-        if (!WidgetActivity.isActivityRunning()) {
-            val intent = Intent(context, WidgetActivity::class.java)
+        if (!MessengerActivity.isActivityRunning()) {
+            val intent = Intent(context, MessengerActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             context!!.startActivity(intent)
         }
@@ -347,9 +347,9 @@ object Customerly {
 
         val context = initializedWebView?.context
         if (context != null) {
-            val intent = Intent(context, WidgetActivity::class.java)
+            val intent = Intent(context, MessengerActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            intent.putExtra(WidgetActivity.ExtraKey.ACTION.name, WidgetActivity.Action.HIDE.name)
+            intent.putExtra(MessengerActivity.ExtraKey.ACTION.name, MessengerActivity.Action.HIDE.name)
             context.startActivity(intent)
         }
     }

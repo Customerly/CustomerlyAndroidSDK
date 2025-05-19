@@ -49,9 +49,9 @@ class NotificationsHelper(context: Context) {
     ) {
         val abstractedMessage = abstractify(message)
 
-        val intent = Intent(context, WidgetActivity::class.java).apply {
+        val intent = Intent(context, MessengerActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(WidgetActivity.ExtraKey.CONVERSATION_ID.name, conversationId)
+            putExtra(MessengerActivity.ExtraKey.CONVERSATION_ID.name, conversationId)
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

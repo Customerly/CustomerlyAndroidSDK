@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.FrameLayout
 
-class WidgetActivity : AppCompatActivity() {
+class MessengerActivity : AppCompatActivity() {
     enum class ExtraKey {
         CONVERSATION_ID, ACTION
     }
@@ -18,10 +18,10 @@ class WidgetActivity : AppCompatActivity() {
 
     companion object {
         private var isRunning = false
-        private var currentInstance: WidgetActivity? = null
+        private var currentInstance: MessengerActivity? = null
 
         fun isActivityRunning(): Boolean = isRunning
-        fun getCurrentInstance(): WidgetActivity? = currentInstance
+        fun getCurrentInstance(): MessengerActivity? = currentInstance
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,9 +57,9 @@ class WidgetActivity : AppCompatActivity() {
                 )
             )
 
-            Log.d("CustomerlySDK", "WebView attached to WidgetActivity")
+            Log.d("CustomerlySDK", "WebView attached to MessengerActivity")
         } else {
-            Log.e("CustomerlySDK", "WebView was null in WidgetActivity")
+            Log.e("CustomerlySDK", "WebView was null in MessengerActivity")
             finish()
             return
         }
