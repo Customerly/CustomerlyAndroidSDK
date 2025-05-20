@@ -172,6 +172,17 @@ object Customerly {
                 super.onReceivedError(view, request, error)
                 Log.e("CustomerlySDK", "WebView error: ${error?.description}")
             }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val url = request?.url?.toString()
+                if (url != null) {
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    context?.startActivity(intent)
+                    return true
+                }
+                return false
+            }
         }
 
         webView.addJavascriptInterface(jsBridge!!, "CustomerlyNative")
