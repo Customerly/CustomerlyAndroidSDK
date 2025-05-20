@@ -79,6 +79,7 @@ object Customerly {
         val settingsMap = buildMap<String, Any> {
             put("app_id", settings.app_id)
             put("sdkMode", true)
+            put("showBackInsteadOfClose", true)
             settings.accentColor?.let { put("accentColor", it) }
             settings.contrastColor?.let { put("contrastColor", it) }
             settings.attachmentsAvailable?.let { put("attachmentsAvailable", it) }
