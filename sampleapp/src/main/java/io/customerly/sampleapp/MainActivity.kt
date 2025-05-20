@@ -14,7 +14,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Customerly.load(this, CustomerlySettings(app_id = "936fd1dc"))
+        Customerly.load(this, CustomerlySettings(app_id = "YOUR_APP_ID"))
 
         Customerly.setOnMessengerInitialized {
             runOnUiThread {
@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnLoginUser).setOnClickListener {
             Customerly.update(
                 CustomerlySettings(
-                    app_id = "936fd1dc",
+                    app_id = "YOUR_APP_ID",
                     user_id = "123",
                     email = "gb@customerly.io",
                     name = "Giorgio",
