@@ -63,8 +63,6 @@ class NotificationsHelper(context: Context) {
             .setContentIntent(pendingIntent).build()
 
         notificationManager.notify(notificationId, notification)
-
-        Log.d("CustomerlySDK", "Notification shown with ID: $notificationId")
     }
 
     private fun checkNotificationPermission() {
@@ -84,8 +82,6 @@ class NotificationsHelper(context: Context) {
                 description = descriptionText
             }
             notificationManager.createNotificationChannel(channel)
-
-            Log.d("CustomerlySDK", "Notification channel created")
         } else {
             Log.w(
                 "CustomerlySDK",

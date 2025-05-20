@@ -56,8 +56,6 @@ class MessengerActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
                 )
             )
-
-            Log.d("CustomerlySDK", "WebView attached to MessengerActivity")
         } else {
             Log.e("CustomerlySDK", "WebView was null in MessengerActivity")
             finish()
