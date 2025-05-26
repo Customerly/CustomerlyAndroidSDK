@@ -1,5 +1,8 @@
 # Customerly Android SDK
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.customerly/androidsdk)](https://search.maven.org/artifact/io.customerly/androidsdk)
+![GitHub License](https://img.shields.io/github/license/Customerly/CustomerlyAndroidSDK)
+
 Customerly is a customer service platform that helps businesses provide better support to their customers. The Android SDK allows you to integrate Customerly's features directly into your Android application, including:
 
 - Live chat support
@@ -50,68 +53,140 @@ Customerly.show()
 
 ### Initialization
 
-#### `load(context: Context, settings: CustomerlySettings)`
+#### load
 Initializes the Customerly SDK with the provided settings.
 
-#### `setContext(context: Context)`
+```kotlin
+Customerly.load(context, CustomerlySettings(app_id = "YOUR_APP_ID"))
+```
+
+#### setContext
 Updates the context used by the SDK. Call this when your application's context changes.
 
-#### `update(settings: CustomerlySettings)`
+```kotlin
+Customerly.setContext(context)
+```
+
+#### update
 Updates the Customerly SDK settings.
 
-#### `requestNotificationPermissionIfNeeded()`
+```kotlin
+Customerly.update(CustomerlySettings(app_id = "YOUR_APP_ID"))
+```
+
+#### requestNotificationPermissionIfNeeded
 Requests notification permissions if not already granted.
+
+```kotlin
+Customerly.requestNotificationPermissionIfNeeded()
+```
 
 ### Chat Interface
 
-#### `show(withoutNavigation: Boolean = false, safe: Boolean = false)`
+#### show
 Shows the Customerly chat interface.
 
-#### `hide()`
+```kotlin
+Customerly.show()
+```
+
+#### hide
 Hides the Customerly chat interface.
 
-#### `back()`
+```kotlin
+Customerly.hide()
+```
+
+#### back
 Navigates back in the chat interface.
+
+```kotlin
+Customerly.back()
+```
 
 ### User Management
 
-#### `logout()`
+#### logout
 Logs out the current user.
 
-#### `registerLead(email: String, attributes: Map<String, String>? = null)`
+```kotlin
+Customerly.logout()
+```
+
+#### registerLead
 Registers a new lead with the provided email and optional attributes.
+
+```kotlin
+Customerly.registerLead(email = "test@customerly.io", attributes = mapOf("name" to "John Doe"))
+```
 
 ### Messaging
 
-#### `showNewMessage(message: String)`
+#### showNewMessage
 Shows the chat interface with a pre-filled message.
 
-#### `sendNewMessage(message: String)`
+```kotlin
+Customerly.showNewMessage(message = "Hello, how are you?")
+```
+
+#### sendNewMessage
 Sends a new message and shows the chat interface.
 
-#### `navigateToConversation(conversationId: Int)`
+```kotlin
+Customerly.sendNewMessage(message = "Hello, how are you?")
+```
+
+#### navigateToConversation
 Navigates to a specific conversation.
+
+```kotlin
+Customerly.navigateToConversation(conversationId = 123)
+```
 
 ### Help Center
 
-#### `showArticle(collectionSlug: String, articleSlug: String)`
+#### showArticle
 Shows a specific help center article.
+
+```kotlin
+Customerly.showArticle(collectionSlug = "collection", articleSlug = "article")
+```
 
 ### Analytics
 
-#### `event(name: String)`
+#### event
 Tracks a custom event.
 
-#### `attribute(name: String, value: Any)`
+```kotlin
+Customerly.event(name = "event_name")
+```
+
+#### attribute
 Sets a custom attribute for the current user.
+
+```kotlin
+Customerly.attribute(name = "attribute_name", value = "attribute_value")
+```
 
 ### Message Counts
 
-#### `getUnreadMessagesCount(resultCallback: ValueCallback<Int>)`
+#### getUnreadMessagesCount
 Gets the count of unread messages.
 
-#### `getUnreadConversationsCount(resultCallback: ValueCallback<Int>)`
+```kotlin
+Customerly.getUnreadMessagesCount(resultCallback = { count ->
+    Log.d("Customerly", "Unread messages count: $count")
+})
+```
+
+#### getUnreadConversationsCount
 Gets the count of unread conversations.
+
+```kotlin
+Customerly.getUnreadConversationsCount(resultCallback = { count ->
+    Log.d("Customerly", "Unread conversations count: $count")
+})
+```
 
 ### Callbacks
 
@@ -151,7 +226,7 @@ You can also remove all callbacks at once:
 fun removeAllCallbacks()
 ```
 
-## Example Project
+## Examples
 
 The SDK includes a sample app project located in the `sampleapp` directory that demonstrates how to integrate and use the Customerly SDK. The sample app showcases various features including:
 
