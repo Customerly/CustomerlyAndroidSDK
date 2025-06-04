@@ -1,3 +1,7 @@
+<a href="https://customerly.io" target="_blank">
+    <img src="https://avatars1.githubusercontent.com/u/23583405?s=200&v=4" height="100" alt="Customerly logo">
+</a>
+
 # Customerly Android SDK
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.customerly/androidsdk)](https://search.maven.org/artifact/io.customerly/androidsdk)
@@ -201,6 +205,7 @@ fun setOnNewConversation(callback: (String, List<AttachmentPayload>) -> Unit)
 fun setOnNewConversationReceived(callback: (Int) -> Unit)
 fun setOnHelpCenterArticleOpened(callback: (HelpCenterArticle) -> Unit)
 fun setOnLeadGenerated(callback: (String?) -> Unit)
+fun setOnMessengerInitialized(callback: () -> Unit)
 fun setOnProfilingQuestionAnswered(callback: (String, String) -> Unit)
 fun setOnProfilingQuestionAsked(callback: (String) -> Unit)
 fun setOnRealtimeVideoAnswered(callback: (RealtimeCall) -> Unit)

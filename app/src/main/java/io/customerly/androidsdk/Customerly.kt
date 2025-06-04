@@ -559,6 +559,7 @@ object Customerly {
     fun removeOnChatOpened() = removeCallback("onChatOpened")
     fun removeOnHelpCenterArticleOpened() = removeCallback("onHelpCenterArticleOpened")
     fun removeOnLeadGenerated() = removeCallback("onLeadGenerated")
+    fun removeOnMessengerInitialized() = removeCallback("onMessengerInitialized")
     fun removeOnNewConversation() = removeCallback("onNewConversation")
     fun removeOnNewMessageReceived() = removeCallback("onNewMessageReceived")
     fun removeOnNewConversationReceived() = removeCallback("onNewConversationReceived")
