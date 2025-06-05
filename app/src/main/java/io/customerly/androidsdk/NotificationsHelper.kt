@@ -45,7 +45,7 @@ class NotificationsHelper(context: Context) {
     }
 
     fun showNotification(
-        context: Context, message: String, notificationId: Int, conversationId: Int
+        context: Context, message: String?, notificationId: Int, conversationId: Int
     ) {
         val abstractedMessage = abstractify(message)
 

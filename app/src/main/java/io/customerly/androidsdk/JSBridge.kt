@@ -14,7 +14,7 @@ interface CustomerlyCallback {
     fun onMessengerInitialized() {}
     fun onNewConversation(message: String, attachments: List<AttachmentPayload>) {}
     fun onNewMessageReceived(
-        accountId: Int, message: String, timestamp: Long, userId: Int, conversationId: Int
+        accountId: Int?, message: String?, timestamp: Long, userId: Int?, conversationId: Int
     ) {
     }
     fun onNewConversationReceived(conversationId: Int) {}
@@ -29,7 +29,7 @@ interface CustomerlyCallback {
     fun onSurveyRejected() {}
 }
 
-class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
+class JSBridge(private val showNotification: (String?, Int, Int) -> Unit) {
     private val callbacks = mutableMapOf<String, CustomerlyCallback>()
 
     fun setCallback(type: String, callback: CustomerlyCallback) {
@@ -82,10 +82,10 @@ class JSBridge(private val showNotification: (String, Int, Int) -> Unit) {
                 }
 
                 "onNewMessageReceived" -> {
-                    val accountId = data?.getInt("accountId") ?: 0
-                    val message = data?.getString("message") ?: ""
+                    val accountId = data?.optInt("accountId")
+                    val message = data?.optString("message")
                     val timestamp = data?.getLong("timestamp") ?: 0L
-                    val userId = data?.getInt("userId") ?: 0
+                    val userId = data?.optInt("userId")
                     val conversationId = data?.getInt("conversationId") ?: 0
 
                     // Generate notification ID from conversationId and timestamp

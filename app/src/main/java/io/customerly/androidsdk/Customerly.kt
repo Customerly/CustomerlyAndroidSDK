@@ -476,10 +476,10 @@ object Customerly {
         })
     }
 
-    fun setOnNewMessageReceived(callback: (Int, String, Long, Int, Int) -> Unit) {
+    fun setOnNewMessageReceived(callback: (Int?, String?, Long, Int?, Int) -> Unit) {
         registerCallback("onNewMessageReceived", object : CustomerlyCallback {
             override fun onNewMessageReceived(
-                accountId: Int, message: String, timestamp: Long, userId: Int, conversationId: Int
+                accountId: Int?, message: String?, timestamp: Long, userId: Int?, conversationId: Int
             ) = callback(accountId, message, timestamp, userId, conversationId)
         })
     }
