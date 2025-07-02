@@ -173,7 +173,9 @@ object Customerly {
                 Log.e("CustomerlySDK", "WebView error: ${error?.description}")
             }
 
-            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+            override fun shouldOverrideUrlLoading(
+                view: WebView?, request: WebResourceRequest?
+            ): Boolean {
                 val url = request?.url?.toString()
                 if (url != null) {
                     val intent = Intent(Intent.ACTION_VIEW, url.toUri())
@@ -221,6 +223,13 @@ object Customerly {
                     CustomerlyNative.postMessage(JSON.stringify({
                       type: "onLeadGenerated",
                       data: {email: email}
+                    }));
+                  };
+                  
+                  customerly.onMessageRead = function(conversationId, conversationMessageId) {
+                    CustomerlyNative.postMessage(JSON.stringify({
+                      type: "onMessageRead",
+                      data: {conversationId: conversationId, conversationMessageId: conversationMessageId}
                     }));
                   };
                   
@@ -361,7 +370,9 @@ object Customerly {
         if (context != null) {
             val intent = Intent(context, MessengerActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            intent.putExtra(MessengerActivity.ExtraKey.ACTION.name, MessengerActivity.Action.HIDE.name)
+            intent.putExtra(
+                MessengerActivity.ExtraKey.ACTION.name, MessengerActivity.Action.HIDE.name
+            )
             context.startActivity(intent)
         }
     }
@@ -463,6 +474,14 @@ object Customerly {
         })
     }
 
+    fun setOnMessageRead(callback: (Int, Int) -> Unit) {
+        registerCallback("onMessageRead", object : CustomerlyCallback {
+            override fun onMessageRead(
+                conversationId: Int, conversationMessageId: Int
+            ) = callback(conversationId, conversationMessageId)
+        })
+    }
+
     fun setOnMessengerInitialized(callback: () -> Unit) {
         registerCallback("onMessengerInitialized", object : CustomerlyCallback {
             override fun onMessengerInitialized() = callback()
@@ -479,7 +498,11 @@ object Customerly {
     fun setOnNewMessageReceived(callback: (Int?, String?, Long, Int?, Int) -> Unit) {
         registerCallback("onNewMessageReceived", object : CustomerlyCallback {
             override fun onNewMessageReceived(
-                accountId: Int?, message: String?, timestamp: Long, userId: Int?, conversationId: Int
+                accountId: Int?,
+                message: String?,
+                timestamp: Long,
+                userId: Int?,
+                conversationId: Int
             ) = callback(accountId, message, timestamp, userId, conversationId)
         })
     }
@@ -559,6 +582,7 @@ object Customerly {
     fun removeOnChatOpened() = removeCallback("onChatOpened")
     fun removeOnHelpCenterArticleOpened() = removeCallback("onHelpCenterArticleOpened")
     fun removeOnLeadGenerated() = removeCallback("onLeadGenerated")
+    fun removeOnMessageRead() = removeCallback("onMessageRead")
     fun removeOnMessengerInitialized() = removeCallback("onMessengerInitialized")
     fun removeOnNewConversation() = removeCallback("onNewConversation")
     fun removeOnNewMessageReceived() = removeCallback("onNewMessageReceived")

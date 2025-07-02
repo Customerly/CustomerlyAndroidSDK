@@ -199,6 +199,7 @@ The SDK provides various callback methods to handle different events:
 ```kotlin
 fun setOnChatClosed(callback: () -> Unit)
 fun setOnChatOpened(callback: () -> Unit)
+fun setOnMessageRead(callback: (Int, Int) -> Unit)
 fun setOnMessengerInitialized(callback: () -> Unit)
 fun setOnNewMessageReceived(callback: (Int?, String?, Long, Int?, Int) -> Unit)
 fun setOnNewConversation(callback: (String, List<AttachmentPayload>) -> Unit)

@@ -11,6 +11,7 @@ interface CustomerlyCallback {
     fun onChatOpened() {}
     fun onHelpCenterArticleOpened(article: HelpCenterArticle) {}
     fun onLeadGenerated(email: String?) {}
+    fun onMessageRead(conversationId: Int, conversationMessageId: Int) {}
     fun onMessengerInitialized() {}
     fun onNewConversation(message: String, attachments: List<AttachmentPayload>) {}
     fun onNewMessageReceived(
@@ -68,6 +69,12 @@ class JSBridge(private val showNotification: (String?, Int, Int) -> Unit) {
                 "onLeadGenerated" -> {
                     val email = data?.optString("email")
                     callbacks["onLeadGenerated"]?.onLeadGenerated(email)
+                }
+
+                "onMessageRead" -> {
+                    val conversationId = data?.getInt("conversationId") ?: 0
+                    val conversationMessageId = data?.getInt("conversationMessageId") ?: 0
+                    callbacks["onMessageRead"]?.onMessageRead(conversationId, conversationMessageId)
                 }
 
                 "onMessengerInitialized" -> callbacks["onMessengerInitialized"]?.onMessengerInitialized()
