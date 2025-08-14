@@ -116,9 +116,9 @@ object Customerly {
         }
 
         val webView = WebView(context!!)
-        jsBridge = JSBridge { message, notificationId, conversationId ->
+        jsBridge = JSBridge { title, body, notificationId, conversationId ->
             this.notificationsHelper?.showNotification(
-                context!!, message, notificationId, conversationId
+                context!!, title, body, notificationId, conversationId
             )
         }
 
@@ -495,15 +495,9 @@ object Customerly {
         })
     }
 
-    fun setOnNewMessageReceived(callback: (Int?, String?, Long, Int?, Int) -> Unit) {
+    fun setOnNewMessageReceived(callback: (UnreadMessage) -> Unit) {
         registerCallback("onNewMessageReceived", object : CustomerlyCallback {
-            override fun onNewMessageReceived(
-                accountId: Int?,
-                message: String?,
-                timestamp: Long,
-                userId: Int?,
-                conversationId: Int
-            ) = callback(accountId, message, timestamp, userId, conversationId)
+            override fun onNewMessageReceived(unreadMessage: UnreadMessage) = callback(unreadMessage)
         })
     }
 

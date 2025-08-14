@@ -45,9 +45,9 @@ class NotificationsHelper(context: Context) {
     }
 
     fun showNotification(
-        context: Context, message: String?, notificationId: Int, conversationId: Int
+        context: Context, title: String?, body: String?, notificationId: Int, conversationId: Int
     ) {
-        val abstractedMessage = abstractify(message)
+        val abstractedBody = abstractify(body)
 
         val intent = Intent(context, MessengerActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -58,9 +58,13 @@ class NotificationsHelper(context: Context) {
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_email).setContentText(abstractedMessage)
-            .setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true)
-            .setContentIntent(pendingIntent).build()
+            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setContentTitle(title)
+            .setContentText(abstractedBody)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
 
         notificationManager.notify(notificationId, notification)
     }

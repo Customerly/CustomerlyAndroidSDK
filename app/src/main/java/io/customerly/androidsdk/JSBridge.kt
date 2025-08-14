@@ -14,10 +14,7 @@ interface CustomerlyCallback {
     fun onMessageRead(conversationId: Int, conversationMessageId: Int) {}
     fun onMessengerInitialized() {}
     fun onNewConversation(message: String, attachments: List<AttachmentPayload>) {}
-    fun onNewMessageReceived(
-        accountId: Int?, message: String?, timestamp: Long, userId: Int?, conversationId: Int
-    ) {
-    }
+    fun onNewMessageReceived(unreadMessage: UnreadMessage) {}
     fun onNewConversationReceived(conversationId: Int) {}
     fun onProfilingQuestionAnswered(attribute: String, value: String) {}
     fun onProfilingQuestionAsked(attribute: String) {}
@@ -30,7 +27,7 @@ interface CustomerlyCallback {
     fun onSurveyRejected() {}
 }
 
-class JSBridge(private val showNotification: (String?, Int, Int) -> Unit) {
+class JSBridge(private val showNotification: (String?, String?, Int, Int) -> Unit) {
     private val callbacks = mutableMapOf<String, CustomerlyCallback>()
 
     fun setCallback(type: String, callback: CustomerlyCallback) {
@@ -89,19 +86,13 @@ class JSBridge(private val showNotification: (String?, Int, Int) -> Unit) {
                 }
 
                 "onNewMessageReceived" -> {
-                    val accountId = data?.optInt("accountId")
-                    val message = data?.optString("message")
-                    val timestamp = data?.getLong("timestamp") ?: 0L
-                    val userId = data?.optInt("userId")
-                    val conversationId = data?.getInt("conversationId") ?: 0
+                    val unreadMessage = data?.toUnreadMessage() ?: return
 
                     // Generate notification ID from conversationId and timestamp
-                    val notificationId = (conversationId + timestamp).toInt()
-                    showNotification(message, notificationId, conversationId)
+                    val notificationId = (unreadMessage.conversation_id + unreadMessage.timestamp).toInt()
+                    showNotification(unreadMessage.account_name, unreadMessage.message, notificationId, unreadMessage.conversation_id.toInt())
 
-                    callbacks["onNewMessageReceived"]?.onNewMessageReceived(
-                        accountId, message, timestamp, userId, conversationId
-                    )
+                    callbacks["onNewMessageReceived"]?.onNewMessageReceived(unreadMessage)
                 }
 
                 "onNewConversationReceived" -> {
@@ -254,6 +245,17 @@ class JSBridge(private val showNotification: (String?, Int, Int) -> Unit) {
     private fun JSONObject.toRealtimeCallUser(): RealtimeCallUser {
         return RealtimeCallUser(
             user_id = getLong("user_id")
+        )
+    }
+
+    private fun JSONObject.toUnreadMessage(): UnreadMessage {
+        return UnreadMessage(
+            account_id = optLong("accountId").takeIf { it != 0L },
+            account_name = optString("accountName").takeIf { it.isNotEmpty() },
+            message = optString("message").takeIf { it.isNotEmpty() },
+            timestamp = getLong("timestamp"),
+            user_id = optLong("userId").takeIf { it != 0L },
+            conversation_id = getLong("conversationId")
         )
     }
 }
