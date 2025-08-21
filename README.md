@@ -4,7 +4,7 @@
 
 # Customerly Android SDK
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.customerly/androidsdk)](https://search.maven.org/artifact/io.customerly/androidsdk)
+[![Maven Central](https://img.shields.io/maven-central/v/io.customerly/customerlyandroidsdk)](https://search.maven.org/artifact/io.customerly/customerlyandroidsdk)
 ![GitHub License](https://img.shields.io/github/license/Customerly/CustomerlyAndroidSDK)
 
 Customerly is a customer service platform that helps businesses provide better support to their customers. The Android SDK allows you to integrate Customerly's features directly into your Android application, including:
@@ -23,7 +23,7 @@ Customerly is a customer service platform that helps businesses provide better s
 
 ```gradle
 dependencies {
-    implementation 'io.customerly:androidsdk:1.0.0'
+    implementation 'io.customerly:customerlyandroidsdk:1.0.0'
 }
 ```
 

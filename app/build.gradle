@@ -1,7 +1,9 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish' version '0.34.0'
 }
 
 android {
@@ -47,42 +49,36 @@ task androidSourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
+mavenPublishing {
+    publishToMavenCentral(true)
 
-                groupId = "io.customerly"
-                artifactId = "androidsdk"
-                version = libraryVersion
+    signAllPublications()
 
-                artifact androidSourcesJar
+    configure(new AndroidSingleVariantLibrary("release", true, false))
 
-                pom {
-                    name = "Customerly Android SDK"
-                    description = "SDK for integrating Customerly in Android apps"
-                    url = "https://github.com/customerly/CustomerlyAndroidSDK"
-                    licenses {
-                        license {
-                            name = "GNU General Public License v3.0"
-                            url = "https://www.gnu.org/licenses/gpl-3.0.en.html"
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = "customerly"
-                            name = "Customerly Dev Team"
-                            email = "developers@customerly.io"
-                        }
-                    }
-                    scm {
-                        connection = "scm:git:https://github.com/customerly/CustomerlyAndroidSDK.git"
-                        developerConnection = "scm:git:ssh://git@github.com/customerly/CustomerlyAndroidSDK.git"
-                        url = "https://github.com/customerly/CustomerlyAndroidSDK"
-                    }
-                }
+    coordinates("io.customerly", "customerlyandroidsdk", libraryVersion)
+
+    pom {
+        name = "Customerly Android SDK"
+        description = "SDK for integrating Customerly in Android apps"
+        url = "https://github.com/customerly/CustomerlyAndroidSDK"
+        licenses {
+            license {
+                name = "GNU General Public License v3.0"
+                url = "https://www.gnu.org/licenses/gpl-3.0.en.html"
             }
+        }
+        developers {
+            developer {
+                id = "customerly"
+                name = "Customerly Dev Team"
+                email = "developers@customerly.io"
+            }
+        }
+        scm {
+            connection = "scm:git:https://github.com/customerly/CustomerlyAndroidSDK.git"
+            developerConnection = "scm:git:ssh://git@github.com/customerly/CustomerlyAndroidSDK.git"
+            url = "https://github.com/customerly/CustomerlyAndroidSDK"
         }
     }
 }

@@ -14,6 +14,7 @@ import io.customerly.androidsdk.models.CustomerlySettings
 import io.customerly.androidsdk.models.HelpCenterArticle
 import io.customerly.androidsdk.models.RealtimeCall
 import io.customerly.androidsdk.models.Survey
+import io.customerly.androidsdk.models.UnreadMessage
 import org.json.JSONObject
 import androidx.core.net.toUri
 
