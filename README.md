@@ -23,7 +23,7 @@ Customerly is a customer service platform that helps businesses provide better s
 
 ```gradle
 dependencies {
-    implementation 'io.customerly:customerlyandroidsdk:1.0.0'
+    implementation 'io.customerly:customerlyandroidsdk:1.0.1'
 }
 ```
 
