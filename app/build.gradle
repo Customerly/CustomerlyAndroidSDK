@@ -49,8 +49,10 @@ task androidSourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
 }
 
+android.buildFeatures.buildConfig = true
+
 mavenPublishing {
-    publishToMavenCentral(true)
+    publishToMavenCentral()
 
     signAllPublications()
 

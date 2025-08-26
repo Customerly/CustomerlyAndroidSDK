@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*.*.*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Get default branch
+        id: get_branch
+        run: |
+          DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+          echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
+
+      - name: Check versions
+        id: check_versions
+        run: |
+          BUILD_GRADLE_VERSION=$(grep "def libraryVersion =" app/build.gradle | sed -E 's/.*= "([0-9]+\.[0-9]+\.[0-9]+)".*/\1/')
+          README_VERSION=$(grep "implementation 'io.customerly:customerlyandroidsdk:" README.md | sed -E 's/.*io.customerly:customerlyandroidsdk:([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+
+          echo "Tag version: $VERSION"
+          echo "Build Gradle version: $BUILD_GRADLE_VERSION"
+          echo "README version: $README_VERSION"
+
+          if [ "$BUILD_GRADLE_VERSION" != "$VERSION" ] || [ "$README_VERSION" != "$VERSION" ]; then
+            echo "versions_mismatch=true" >> $GITHUB_OUTPUT
+            echo "build_gradle_version=$BUILD_GRADLE_VERSION" >> $GITHUB_OUTPUT
+            echo "readme_version=$README_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "versions_mismatch=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update versions and commit
+        if: steps.check_versions.outputs.versions_mismatch == 'true'
+        run: |
+          # Checkout default branch
+          git checkout $DEFAULT_BRANCH
+
+          # Update build.gradle
+          sed -i '' "s/def libraryVersion = \"[0-9]*\.[0-9]*\.[0-9]*\"/def libraryVersion = \"$VERSION\"/" app/build.gradle
+
+          # Update README
+          sed -i '' "s/implementation 'io.customerly:customerlyandroidsdk:[0-9]*\.[0-9]*\.[0-9]*'/implementation 'io.customerly:customerlyandroidsdk:$VERSION'/" README.md
+
+          # Commit and push changes
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add app/build.gradle README.md
+          git commit -m "chore: bump version to $VERSION"
+          git push origin $DEFAULT_BRANCH
+
+          # Move tag to new commit
+          git tag -d $VERSION
+          git tag $VERSION
+          git push origin :refs/tags/$VERSION --force
+          git push origin $VERSION --force
+
+          echo "Versions updated and tag moved. Please run the workflow manually."
+          exit 1
+
+      - name: Build and publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew publishAndReleaseToMavenCentral
