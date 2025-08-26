@@ -106,8 +106,60 @@ object Customerly {
                     ).plus(company.additionalAttributes)
                 )
             }
+            put("device", getDeviceInfo())
         }
         return JSONObject(settingsMap).toString()
+    }
+    
+    private fun getDeviceInfo(): Map<String, String> {
+        val context = this.context ?: return emptyMap()
+        
+        return mapOf(
+            "os" to "android",
+            "app_name" to getAppName(context),
+            "app_version" to getAppVersion(context),
+            "device" to getDeviceModel(),
+            "os_version" to getOsVersion()
+        )
+    }
+    
+    private fun getAppName(context: Context): String {
+        return try {
+            val packageManager = context.packageManager
+            val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
+            packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+    
+    private fun getAppVersion(context: Context): String {
+        return try {
+            val packageManager = context.packageManager
+            val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
+            packageInfo.versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+    
+    private fun getDeviceModel(): String {
+        return try {
+            val manufacturer = android.os.Build.MANUFACTURER
+            val model = android.os.Build.MODEL
+            val device = android.os.Build.DEVICE
+            "$manufacturer $model ($device)"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+    
+    private fun getOsVersion(): String {
+        return try {
+            android.os.Build.VERSION.RELEASE
+        } catch (e: Exception) {
+            "Unknown"
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
