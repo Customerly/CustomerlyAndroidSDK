@@ -44,7 +44,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
 
-def libraryVersion = "1.0.1"
+def libraryVersion = "1.1.0"
 
 android.buildFeatures.buildConfig = true
 
