@@ -27,17 +27,9 @@ dependencies {
 }
 ```
 
-2. Add the following permissions to your `AndroidManifest.xml` to enable file attachments in the live chat:
+The SDK declares the permissions it needs (`INTERNET`, `POST_NOTIFICATIONS`, and the storage permissions used by the live-chat file-attachment flow) in its own manifest, so they are merged into your app automatically — no manifest changes are required.
 
-```xml
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-    android:maxSdkVersion="28" />
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-    tools:ignore="ScopedStorage" />
-```
-
-These permissions are required to allow users to attach files in the live chat. The `WRITE_EXTERNAL_STORAGE` permission is limited to Android 10 (API level 28) and below, while `MANAGE_EXTERNAL_STORAGE` is used for Android 11 (API level 30) and above.
+> **Note:** the SDK declares `MANAGE_EXTERNAL_STORAGE`, which is subject to Google Play's [All files access policy](https://support.google.com/googleplay/android-developer/answer/10467955). If your app is distributed on Google Play you may need to justify this permission during review.
 
 ## Basic Usage
 
@@ -58,6 +50,7 @@ Customerly.show()
 ### Initialization
 
 #### load
+
 Initializes the Customerly SDK with the provided settings.
 
 ```kotlin
@@ -65,6 +58,7 @@ Customerly.load(context, CustomerlySettings(app_id = "YOUR_APP_ID"))
 ```
 
 #### setContext
+
 Updates the context used by the SDK. Call this when your application's context changes.
 
 ```kotlin
@@ -72,6 +66,7 @@ Customerly.setContext(context)
 ```
 
 #### update
+
 Updates the Customerly SDK settings.
 
 ```kotlin
@@ -79,6 +74,7 @@ Customerly.update(CustomerlySettings(app_id = "YOUR_APP_ID"))
 ```
 
 #### requestNotificationPermissionIfNeeded
+
 Requests notification permissions if not already granted.
 
 ```kotlin
@@ -88,6 +84,7 @@ Customerly.requestNotificationPermissionIfNeeded()
 ### Chat Interface
 
 #### show
+
 Shows the Customerly chat interface.
 
 ```kotlin
@@ -95,6 +92,7 @@ Customerly.show()
 ```
 
 #### hide
+
 Hides the Customerly chat interface.
 
 ```kotlin
@@ -102,6 +100,7 @@ Customerly.hide()
 ```
 
 #### back
+
 Navigates back in the chat interface.
 
 ```kotlin
@@ -111,6 +110,7 @@ Customerly.back()
 ### User Management
 
 #### logout
+
 Logs out the current user.
 
 ```kotlin
@@ -118,6 +118,7 @@ Customerly.logout()
 ```
 
 #### registerLead
+
 Registers a new lead with the provided email and optional attributes.
 
 ```kotlin
@@ -127,6 +128,7 @@ Customerly.registerLead(email = "test@customerly.io", attributes = mapOf("name" 
 ### Messaging
 
 #### showNewMessage
+
 Shows the chat interface with a pre-filled message.
 
 ```kotlin
@@ -134,6 +136,7 @@ Customerly.showNewMessage(message = "Hello, how are you?")
 ```
 
 #### sendNewMessage
+
 Sends a new message and shows the chat interface.
 
 ```kotlin
@@ -141,6 +144,7 @@ Customerly.sendNewMessage(message = "Hello, how are you?")
 ```
 
 #### navigateToConversation
+
 Navigates to a specific conversation.
 
 ```kotlin
@@ -150,6 +154,7 @@ Customerly.navigateToConversation(conversationId = 123)
 ### Help Center
 
 #### showArticle
+
 Shows a specific help center article.
 
 ```kotlin
@@ -159,6 +164,7 @@ Customerly.showArticle(collectionSlug = "collection", articleSlug = "article")
 ### Analytics
 
 #### event
+
 Tracks a custom event.
 
 ```kotlin
@@ -166,6 +172,7 @@ Customerly.event(name = "event_name")
 ```
 
 #### attribute
+
 Sets a custom attribute for the current user.
 
 ```kotlin
@@ -175,6 +182,7 @@ Customerly.attribute(name = "attribute_name", value = "attribute_value")
 ### Message Counts
 
 #### getUnreadMessagesCount
+
 Gets the count of unread messages.
 
 ```kotlin
@@ -184,6 +192,7 @@ Customerly.getUnreadMessagesCount(resultCallback = { count ->
 ```
 
 #### getUnreadConversationsCount
+
 Gets the count of unread conversations.
 
 ```kotlin

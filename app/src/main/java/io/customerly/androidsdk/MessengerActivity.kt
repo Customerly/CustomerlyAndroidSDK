@@ -2,10 +2,10 @@ package io.customerly.androidsdk
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import android.widget.FrameLayout
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
 
 class MessengerActivity : AppCompatActivity() {
     enum class ExtraKey {
@@ -28,6 +28,12 @@ class MessengerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         isRunning = true
         currentInstance = this
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                Customerly.back()
+            }
+        })
 
         if (intent.getStringExtra(ExtraKey.ACTION.name) == Action.HIDE.name) {
             finish()
@@ -57,16 +63,12 @@ class MessengerActivity : AppCompatActivity() {
                 )
             )
         } else {
-            Log.e("CustomerlySDK", "WebView was null in MessengerActivity")
+            CustomerlyLog.e("WebView was null in MessengerActivity")
             finish()
             return
         }
 
         setContentView(rootLayout)
-    }
-
-    override fun onBackPressed() {
-        Customerly.back()
     }
 
     override fun onDestroy() {
@@ -75,6 +77,9 @@ class MessengerActivity : AppCompatActivity() {
         currentInstance = null
     }
 
+    // The file-attachment flow relies on the classic result API because the
+    // WebChromeClient file chooser is launched on demand from the SDK singleton.
+    @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Customerly.handleActivityResult(requestCode, resultCode, data)

@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.webkit.*
 import io.customerly.androidsdk.models.AttachmentPayload
 import io.customerly.androidsdk.models.CustomerlySettings
@@ -69,14 +68,14 @@ object Customerly {
 
     fun requestNotificationPermissionIfNeeded() {
         if (context == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
             return
         }
 
         this.notificationsHelper?.requestNotificationPermissionIfNeeded(context!!)
     }
 
-    private fun serializeSettings(settings: CustomerlySettings): String {
+    internal fun serializeSettings(settings: CustomerlySettings): String {
         val settingsMap = buildMap<String, Any> {
             put("app_id", settings.app_id)
             put("sdkMode", true)
@@ -127,7 +126,10 @@ object Customerly {
         return try {
             val packageManager = context.packageManager
             val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
-            packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
+            // applicationInfo is nullable as of API 35.
+            packageInfo.applicationInfo
+                ?.let { packageManager.getApplicationLabel(it).toString() }
+                ?: "Unknown"
         } catch (e: Exception) {
             "Unknown"
         }
@@ -179,11 +181,23 @@ object Customerly {
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false
+            // Required so the WebView can read file:// URIs returned by some file
+            // pickers when attaching files/media to messages.
             allowFileAccess = true
             allowContentAccess = true
+            // Realtime video calls are opened via window.open(); allow the WebView
+            // to create the window so onCreateWindow can hand the URL to the
+            // system browser (where camera/mic are granted natively).
+            setSupportMultipleWindows(true)
+            javaScriptCanOpenWindowsAutomatically = true
         }
 
-        WebView.setWebContentsDebuggingEnabled(true)
+        // Remote WebView inspection exposes chat content, cookies and session
+        // data to anyone with the device. Enable it only for debug builds of the
+        // SDK — never in the published release artifact.
+        if (BuildConfig.DEBUG) {
+            WebView.setWebContentsDebuggingEnabled(true)
+        }
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
@@ -195,35 +209,64 @@ object Customerly {
                     return false
                 }
 
+                // Release any previous, still-pending callback so the WebView's
+                // file input never gets permanently stuck.
+                filePathCallback?.onReceiveValue(null)
+                filePathCallback = null
+
                 val intent = fileChooserParams?.createIntent()
                 try {
                     val messengerActivity = MessengerActivity.getCurrentInstance()
                     if (messengerActivity != null) {
+                        @Suppress("DEPRECATION")
                         messengerActivity.startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE)
                         filePathPickerCallback?.let { callback ->
                             filePathCallback = callback
                         }
                         return true
                     } else {
-                        Log.e("CustomerlySDK", "MessengerActivity not available")
+                        CustomerlyLog.e("MessengerActivity not available")
                     }
                 } catch (e: Exception) {
-                    Log.e("CustomerlySDK", "Error launching file chooser", e)
+                    CustomerlyLog.e("Error launching file chooser", e)
                 }
                 return false
+            }
+
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: android.os.Message?
+            ): Boolean {
+                // The widget opens realtime video calls (and other external
+                // targets) via window.open(). A stock WebView drops these. We
+                // capture the target URL through a throwaway WebView and hand it
+                // to the system browser, where camera/mic permissions are granted
+                // natively — so calls don't need to run inside this WebView.
+                val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+                val hrefWebView = WebView(view?.context ?: context!!)
+                hrefWebView.webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        v: WebView?, request: WebResourceRequest?
+                    ): Boolean {
+                        request?.url?.toString()?.let { openUrlExternally(it) }
+                        hrefWebView.destroy()
+                        return true
+                    }
+                }
+                transport.webView = hrefWebView
+                resultMsg.sendToTarget()
+                return true
             }
         }
 
         webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-            }
-
             override fun onReceivedError(
                 view: WebView?, request: WebResourceRequest?, error: WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
-                Log.e("CustomerlySDK", "WebView error: ${error?.description}")
+                CustomerlyLog.e("WebView error: ${error?.description}")
             }
 
             override fun shouldOverrideUrlLoading(
@@ -378,32 +421,52 @@ object Customerly {
         cookieManager.flush()
     }
 
-    private fun evaluateJavascript(
-        script: String, safe: Boolean = false, resultCallback: ValueCallback<String>? = null
-    ) {
-        if (initializedWebView == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
-            return
-        }
+    /**
+     * Encodes an arbitrary string as a safe JavaScript string literal (quotes
+     * included), so values containing quotes, backslashes or newlines can't break
+     * out of — or inject into — the generated JS.
+     */
+    private fun jsString(value: String): String = JSONObject.quote(value)
 
-        if (safe) {
-            initializedWebView?.post {
-                initializedWebView?.evaluateJavascript(script, resultCallback)
-            }
-        } else {
-            initializedWebView?.evaluateJavascript(script, resultCallback)
+    private fun openUrlExternally(url: String) {
+        val ctx = context ?: return
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            ctx.startActivity(intent)
+        } catch (e: Exception) {
+            CustomerlyLog.e("Unable to open external url", e)
         }
     }
 
-    fun show(withoutNavigation: Boolean = false, safe: Boolean = false) {
-        if (initializedWebView == null || context == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
+    private fun evaluateJavascript(
+        script: String, resultCallback: ValueCallback<String>? = null
+    ) {
+        val webView = initializedWebView
+        if (webView == null) {
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
             return
         }
 
-        evaluateJavascript("customerly.open()", safe)
+        // evaluateJavascript must be invoked on the WebView's (UI) thread. Always
+        // post so these methods are safe to call from any thread.
+        webView.post {
+            webView.evaluateJavascript(script, resultCallback)
+        }
+    }
+
+    // `safe` is retained for source compatibility; evaluateJavascript now always
+    // posts to the WebView thread, so it no longer changes behaviour.
+    @Suppress("UNUSED_PARAMETER")
+    fun show(withoutNavigation: Boolean = false, safe: Boolean = false) {
+        if (initializedWebView == null || context == null) {
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
+            return
+        }
+
+        evaluateJavascript("customerly.open()")
         if (!withoutNavigation) {
-            evaluateJavascript("_customerly_sdk.navigate('/', true)", safe)
+            evaluateJavascript("_customerly_sdk.navigate('/', true)")
         }
 
         if (!MessengerActivity.isActivityRunning()) {
@@ -415,7 +478,7 @@ object Customerly {
 
     fun hide() {
         if (initializedWebView == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
             return
         }
 
@@ -435,17 +498,17 @@ object Customerly {
     }
 
     fun event(name: String) {
-        evaluateJavascript("customerly.event('$name')")
+        evaluateJavascript("customerly.event(${jsString(name)})")
     }
 
     fun attribute(name: String, value: Any) {
         val valueJson = when (value) {
-            is String -> "'$value'"
+            is String -> jsString(value)
             is Number, is Boolean -> value.toString()
             else -> JSONObject().put("value", value).toString()
         }
 
-        evaluateJavascript("customerly.attribute('$name', $valueJson)")
+        evaluateJavascript("customerly.attribute(${jsString(name)}, $valueJson)")
     }
 
     fun update(settings: CustomerlySettings) {
@@ -455,22 +518,22 @@ object Customerly {
 
     fun showNewMessage(message: String) {
         show()
-        evaluateJavascript("customerly.showNewMessage('$message')")
+        evaluateJavascript("customerly.showNewMessage(${jsString(message)})")
     }
 
     fun sendNewMessage(message: String) {
         show()
-        evaluateJavascript("customerly.sendNewMessage('$message')")
+        evaluateJavascript("customerly.sendNewMessage(${jsString(message)})")
     }
 
     fun showArticle(collectionSlug: String, articleSlug: String) {
         show()
-        evaluateJavascript("customerly.showArticle('$collectionSlug', '$articleSlug')")
+        evaluateJavascript("customerly.showArticle(${jsString(collectionSlug)}, ${jsString(articleSlug)})")
     }
 
     fun registerLead(email: String, attributes: Map<String, String>? = null) {
         val attributesJson = attributes?.let { JSONObject(it).toString() } ?: "null"
-        evaluateJavascript("customerly.registerLead('$email', $attributesJson)")
+        evaluateJavascript("customerly.registerLead(${jsString(email)}, $attributesJson)")
     }
 
     fun back() {
@@ -496,7 +559,7 @@ object Customerly {
     // Callback registration methods
     private fun registerCallback(type: String, callback: CustomerlyCallback) {
         if (jsBridge == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
             return
         }
 
@@ -618,7 +681,7 @@ object Customerly {
     // Remove callback methods
     private fun removeCallback(type: String) {
         if (jsBridge == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
             return
         }
 
@@ -646,7 +709,7 @@ object Customerly {
 
     fun removeAllCallbacks() {
         if (jsBridge == null) {
-            Log.e("CustomerlySDK", "Customerly is not initialized. Call load() first.")
+            CustomerlyLog.e("Customerly is not initialized. Call load() first.")
             return
         }
 

@@ -44,8 +44,8 @@ class MainActivity : AppCompatActivity() {
                 CustomerlySettings(
                     app_id = "YOUR_APP_ID",
                     user_id = "123",
-                    email = "gb@customerly.io",
-                    name = "Giorgio",
+                    email = "user@example.com",
+                    name = "John Doe",
                 )
             )
         }
@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnSendEvent).setOnClickListener {
-            Customerly.event("ciao")
+            Customerly.event("sample_event")
         }
 
         findViewById<Button>(R.id.btnSetAttribute).setOnClickListener {

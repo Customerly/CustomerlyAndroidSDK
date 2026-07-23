@@ -4,7 +4,8 @@ data class RealtimeCall(
     val account: Account,
     val url: String,
     val conversation_id: Long,
-    val user: RealtimeCallUser
+    val user: RealtimeCallUser,
+    val ts: Long? = null
 )
 
 data class RealtimeCallUser(

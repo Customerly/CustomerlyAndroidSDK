@@ -3,12 +3,20 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Storage permissions for the live-chat file-attachment flow. Kept
+      intentionally: they were added to cover a real device/corner case in the
+      WebView file picker. NOTE: MANAGE_EXTERNAL_STORAGE force-merges into every
+      consumer app and can trigger Google Play policy review — revisit this one
+      specifically if it becomes a problem for integrators.
+    -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
-    
+
     <application>
         <activity
             android:name=".MessengerActivity"

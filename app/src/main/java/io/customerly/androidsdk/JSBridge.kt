@@ -1,9 +1,7 @@
 package io.customerly.androidsdk
 
-import android.util.Log
 import android.webkit.JavascriptInterface
 import io.customerly.androidsdk.models.*
-import org.json.JSONArray
 import org.json.JSONObject
 
 interface CustomerlyCallback {
@@ -88,9 +86,18 @@ class JSBridge(private val showNotification: (String?, String?, Int, Int) -> Uni
                 "onNewMessageReceived" -> {
                     val unreadMessage = data?.toUnreadMessage() ?: return
 
-                    // Generate notification ID from conversationId and timestamp
-                    val notificationId = (unreadMessage.conversation_id + unreadMessage.timestamp).toInt()
-                    showNotification(unreadMessage.account_name, unreadMessage.message, notificationId, unreadMessage.conversation_id.toInt())
+                    // Use the conversation id as the notification id so that
+                    // multiple messages in the same conversation collapse into
+                    // (and update) a single notification, rather than spawning a
+                    // new one per message. Truncating to Int is safe here because
+                    // the deep-link path already treats conversation ids as Int.
+                    val notificationId = unreadMessage.conversation_id.toInt()
+                    showNotification(
+                        unreadMessage.account_name,
+                        unreadMessage.message,
+                        notificationId,
+                        unreadMessage.conversation_id.toInt()
+                    )
 
                     callbacks["onNewMessageReceived"]?.onNewMessageReceived(unreadMessage)
                 }
@@ -141,121 +148,8 @@ class JSBridge(private val showNotification: (String?, String?, Int, Int) -> Uni
                 }
             }
         } catch (e: Exception) {
-            Log.e("CustomerlySDK", "Error processing message: $message", e)
+            // Do not log the raw message payload: it can contain message content / PII.
+            CustomerlyLog.e("Error processing a bridge message", e)
         }
-    }
-
-    private fun JSONObject.toHelpCenterArticle(): HelpCenterArticle {
-        return HelpCenterArticle(
-            knowledge_base_article_id = getLong("knowledge_base_article_id"),
-            knowledge_base_collection_id = getLong("knowledge_base_collection_id"),
-            app_id = getString("app_id"),
-            slug = getString("slug"),
-            title = getString("title"),
-            description = getString("description"),
-            body = getString("body"),
-            sort = getInt("sort"),
-            written_by = getJSONObject("written_by").toWrittenBy(),
-            updated_at = getLong("updated_at")
-        )
-    }
-
-    private fun JSONObject.toWrittenBy(): WrittenBy {
-        return WrittenBy(
-            account_id = getLong("account_id"), email = optString("email"), name = getString("name")
-        )
-    }
-
-    private fun JSONObject.toAttachmentPayload(): AttachmentPayload {
-        return AttachmentPayload(
-            name = getString("name"), size = getLong("size"), base64 = getString("base64")
-        )
-    }
-
-    private fun JSONObject.toSurvey(): Survey {
-        return Survey(
-            survey_id = getLong("survey_id"),
-            creator = getJSONObject("creator").toAccount(),
-            thank_you_text = optString("thank_you_text"),
-            seen_at = optLong("seen_at"),
-            question = optJSONObject("question")?.toSurveyQuestion()
-        )
-    }
-
-    private fun JSONObject.toAccount(): Account {
-        return Account(
-            account_id = getLong("account_id"),
-            name = optString("name"),
-            is_ai = getBoolean("is_ai")
-        )
-    }
-
-    private fun JSONObject.toSurveyQuestion(): SurveyQuestion {
-        return SurveyQuestion(
-            survey_id = getLong("survey_id"),
-            survey_question_id = getLong("survey_question_id"),
-            step = getInt("step"),
-            title = optString("title"),
-            subtitle = optString("subtitle"),
-            type = if (has("type")) {
-                when (val typeValue = get("type")) {
-                    is String -> SurveyQuestionType.valueOf(typeValue)
-                    is Number -> SurveyQuestionType.fromInt(typeValue.toInt())
-                    else -> throw IllegalArgumentException("Invalid type value: $typeValue")
-                }
-            } else {
-                throw IllegalArgumentException("Missing type field")
-            },
-            limits = optJSONObject("limits")?.toSurveyQuestionLimits(),
-            choices = getJSONArray("choices").toSurveyQuestionChoices()
-        )
-    }
-
-    private fun JSONObject.toSurveyQuestionLimits(): SurveyQuestionLimits {
-        return SurveyQuestionLimits(
-            from = getInt("from"), to = getInt("to")
-        )
-    }
-
-    private fun JSONArray.toSurveyQuestionChoices(): List<SurveyQuestionChoice> {
-        return List(length()) { i ->
-            getJSONObject(i).toSurveyQuestionChoice()
-        }
-    }
-
-    private fun JSONObject.toSurveyQuestionChoice(): SurveyQuestionChoice {
-        return SurveyQuestionChoice(
-            survey_id = getLong("survey_id"),
-            survey_question_id = getLong("survey_question_id"),
-            survey_choice_id = getLong("survey_choice_id"),
-            step = getInt("step"),
-            value = optString("value")
-        )
-    }
-
-    private fun JSONObject.toRealtimeCall(): RealtimeCall {
-        return RealtimeCall(
-            account = getJSONObject("account").toAccount(),
-            url = getString("url"),
-            conversation_id = getLong("conversation_id"),
-            user = getJSONObject("user").toRealtimeCallUser()
-        )
-    }
-
-    private fun JSONObject.toRealtimeCallUser(): RealtimeCallUser {
-        return RealtimeCallUser(
-            user_id = getLong("user_id")
-        )
-    }
-
-    private fun JSONObject.toUnreadMessage(): UnreadMessage {
-        return UnreadMessage(
-            account_id = optLong("accountId").takeIf { it != 0L },
-            account_name = optString("accountName").takeIf { it.isNotEmpty() },
-            message = optString("message").takeIf { it.isNotEmpty() },
-            timestamp = getLong("timestamp"),
-            user_id = optLong("userId").takeIf { it != 0L },
-            conversation_id = getLong("conversationId")
-        )
     }
 }

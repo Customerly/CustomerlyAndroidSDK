@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class NotificationsHelper(context: Context) {
@@ -37,10 +36,7 @@ class NotificationsHelper(context: Context) {
                 arrayOf(permission), notificationPermissionRequestCode
             )
         } else {
-            Log.w(
-                "CustomerlySDK",
-                "Cannot request notification permission: context is not an Activity"
-            )
+            CustomerlyLog.w("Cannot request notification permission: context is not an Activity")
         }
     }
 
@@ -72,7 +68,7 @@ class NotificationsHelper(context: Context) {
     private fun checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!notificationManager.areNotificationsEnabled()) {
-                Log.w("CustomerlySDK", "Notifications are not enabled for this app")
+                CustomerlyLog.w("Notifications are not enabled for this app")
             }
         }
     }
@@ -87,10 +83,7 @@ class NotificationsHelper(context: Context) {
             }
             notificationManager.createNotificationChannel(channel)
         } else {
-            Log.w(
-                "CustomerlySDK",
-                "Notification channel not created: API level ${Build.VERSION.SDK_INT} is below Oreo"
-            )
+            CustomerlyLog.w("Notification channel not created: API level ${Build.VERSION.SDK_INT} is below Oreo")
         }
     }
 
