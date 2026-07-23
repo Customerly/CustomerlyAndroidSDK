@@ -18,9 +18,8 @@ out/
 # Gradle files
 .gradle/
 build/
-/gradlew
-/gradlew.bat
-/local.properties
+# NOTE: gradlew / gradlew.bat / gradle/wrapper are intentionally committed so the
+# project builds without a local Gradle install. Do not ignore them.
 
 # Android Studio
 *.iml
