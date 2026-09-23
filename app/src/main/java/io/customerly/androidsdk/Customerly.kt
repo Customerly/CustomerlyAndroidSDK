@@ -11,6 +11,7 @@ import android.webkit.*
 import io.customerly.androidsdk.models.AttachmentPayload
 import io.customerly.androidsdk.models.CustomerlySettings
 import io.customerly.androidsdk.models.HelpCenterArticle
+import io.customerly.androidsdk.models.MessengerLoadFailure
 import io.customerly.androidsdk.models.RealtimeCall
 import io.customerly.androidsdk.models.Survey
 import io.customerly.androidsdk.models.UnreadMessage
@@ -60,6 +61,8 @@ object Customerly {
     fun setContext(context: Context) {
         saveCookies()
         this.initializedWebView?.destroy()
+        // preloadWebView() is a no-op while a WebView is set: clear it so a new one is created.
+        this.initializedWebView = null
 
         this.context = context
         this.notificationsHelper = NotificationsHelper(context)
@@ -171,10 +174,13 @@ object Customerly {
         }
 
         val webView = WebView(context!!)
-        jsBridge = JSBridge { title, body, notificationId, conversationId ->
-            this.notificationsHelper?.showNotification(
-                context!!, title, body, notificationId, conversationId
-            )
+        // Reuse the bridge across setContext() so registered callbacks survive the new WebView.
+        if (jsBridge == null) {
+            jsBridge = JSBridge { title, body, notificationId, conversationId ->
+                this.notificationsHelper?.showNotification(
+                    context!!, title, body, notificationId, conversationId
+                )
+            }
         }
 
         webView.settings.apply {
@@ -298,6 +304,13 @@ object Customerly {
                   // Register callbacks
                   customerly.onMessengerInitialized = function() {
                     CustomerlyNative.postMessage(JSON.stringify({type: "onMessengerInitialized"}));
+                  };
+                  
+                  customerly.onMessengerLoadFailed = function(failure) {
+                    CustomerlyNative.postMessage(JSON.stringify({
+                      type: "onMessengerLoadFailed",
+                      data: {status: failure && failure.status, message: failure && failure.message}
+                    }));
                   };
                   
                   customerly.onChatClosed = function() {
@@ -604,6 +617,12 @@ object Customerly {
         })
     }
 
+    fun setOnMessengerLoadFailed(callback: (MessengerLoadFailure) -> Unit) {
+        registerCallback("onMessengerLoadFailed", object : CustomerlyCallback {
+            override fun onMessengerLoadFailed(failure: MessengerLoadFailure) = callback(failure)
+        })
+    }
+
     fun setOnNewConversation(callback: (String, List<AttachmentPayload>) -> Unit) {
         registerCallback("onNewConversation", object : CustomerlyCallback {
             override fun onNewConversation(message: String, attachments: List<AttachmentPayload>) =
@@ -694,6 +713,7 @@ object Customerly {
     fun removeOnLeadGenerated() = removeCallback("onLeadGenerated")
     fun removeOnMessageRead() = removeCallback("onMessageRead")
     fun removeOnMessengerInitialized() = removeCallback("onMessengerInitialized")
+    fun removeOnMessengerLoadFailed() = removeCallback("onMessengerLoadFailed")
     fun removeOnNewConversation() = removeCallback("onNewConversation")
     fun removeOnNewMessageReceived() = removeCallback("onNewMessageReceived")
     fun removeOnNewConversationReceived() = removeCallback("onNewConversationReceived")

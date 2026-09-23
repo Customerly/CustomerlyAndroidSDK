@@ -2,6 +2,7 @@ package io.customerly.sampleapp
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import io.customerly.androidsdk.Customerly
@@ -27,6 +28,10 @@ class MainActivity : AppCompatActivity() {
                         "${count} new conversation/s"
                 }
             }
+        }
+
+        Customerly.setOnMessengerLoadFailed { failure ->
+            Log.e("Customerly", "Messenger failed to load (status: ${failure.status})")
         }
 
         Customerly.requestNotificationPermissionIfNeeded()

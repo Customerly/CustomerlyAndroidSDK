@@ -3,6 +3,7 @@ package io.customerly.androidsdk
 import io.customerly.androidsdk.models.Account
 import io.customerly.androidsdk.models.AttachmentPayload
 import io.customerly.androidsdk.models.HelpCenterArticle
+import io.customerly.androidsdk.models.MessengerLoadFailure
 import io.customerly.androidsdk.models.RealtimeCall
 import io.customerly.androidsdk.models.RealtimeCallUser
 import io.customerly.androidsdk.models.Survey
@@ -139,5 +140,13 @@ internal fun JSONObject.toUnreadMessage(): UnreadMessage {
         timestamp = getLong("timestamp"),
         user_id = optLong("userId").takeIf { it != 0L },
         conversation_id = getLong("conversationId")
+    )
+}
+
+// JSON.stringify drops undefined keys: status is missing on network errors.
+internal fun JSONObject.toMessengerLoadFailure(): MessengerLoadFailure {
+    return MessengerLoadFailure(
+        status = if (isNull("status")) null else getInt("status"),
+        message = if (isNull("message")) null else getString("message")
     )
 }

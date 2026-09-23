@@ -138,4 +138,20 @@ class JsonMappersTest {
         assertEquals(SurveyQuestionType.Textarea, SurveyQuestionType.fromInt(7))
         assertThrows(IllegalArgumentException::class.java) { SurveyQuestionType.fromInt(99) }
     }
+
+    @Test
+    fun `toMessengerLoadFailure maps status and message`() {
+        val failure = JSONObject("""{ "status": 401, "message": "Unauthorized" }""").toMessengerLoadFailure()
+
+        assertEquals(401, failure.status)
+        assertEquals("Unauthorized", failure.message)
+    }
+
+    @Test
+    fun `toMessengerLoadFailure treats missing fields as null`() {
+        val failure = JSONObject("{}").toMessengerLoadFailure()
+
+        assertNull(failure.status)
+        assertNull(failure.message)
+    }
 }

@@ -3,6 +3,7 @@ package io.customerly.androidsdk
 import android.webkit.JavascriptInterface
 import io.customerly.androidsdk.models.*
 import org.json.JSONObject
+import java.util.concurrent.ConcurrentHashMap
 
 interface CustomerlyCallback {
     fun onChatClosed() {}
@@ -11,6 +12,7 @@ interface CustomerlyCallback {
     fun onLeadGenerated(email: String?) {}
     fun onMessageRead(conversationId: Int, conversationMessageId: Int) {}
     fun onMessengerInitialized() {}
+    fun onMessengerLoadFailed(failure: MessengerLoadFailure) {}
     fun onNewConversation(message: String, attachments: List<AttachmentPayload>) {}
     fun onNewMessageReceived(unreadMessage: UnreadMessage) {}
     fun onNewConversationReceived(conversationId: Int) {}
@@ -26,7 +28,8 @@ interface CustomerlyCallback {
 }
 
 class JSBridge(private val showNotification: (String?, String?, Int, Int) -> Unit) {
-    private val callbacks = mutableMapOf<String, CustomerlyCallback>()
+    // Written from the caller's thread, read from the WebView's JavaBridge thread.
+    private val callbacks = ConcurrentHashMap<String, CustomerlyCallback>()
 
     fun setCallback(type: String, callback: CustomerlyCallback) {
         callbacks[type] = callback
@@ -73,6 +76,11 @@ class JSBridge(private val showNotification: (String?, String?, Int, Int) -> Uni
                 }
 
                 "onMessengerInitialized" -> callbacks["onMessengerInitialized"]?.onMessengerInitialized()
+
+                "onMessengerLoadFailed" -> {
+                    val failure = data?.toMessengerLoadFailure() ?: MessengerLoadFailure()
+                    callbacks["onMessengerLoadFailed"]?.onMessengerLoadFailed(failure)
+                }
 
                 "onNewConversation" -> {
                     // We don't need to show a notification because this callback is triggered when the user creates a new conversation
