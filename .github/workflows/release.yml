@@ -23,6 +23,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The default also installs 'tools', which recent cmdline-tools no longer ship.
+          packages: 'platform-tools'
         
       - name: Extract version from tag
         id: get_version
