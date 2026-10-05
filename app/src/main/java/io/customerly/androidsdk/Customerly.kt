@@ -121,7 +121,8 @@ object Customerly {
             "app_name" to getAppName(context),
             "app_version" to getAppVersion(context),
             "device" to getDeviceModel(),
-            "os_version" to getOsVersion()
+            "os_version" to getOsVersion(),
+            "sdk_version" to BuildConfig.SDK_VERSION
         )
     }
     
